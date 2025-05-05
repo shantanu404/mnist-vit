@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -165,7 +167,7 @@ class VisionTransformer(nn.Module):
         return x
 
 
-def main():
+def train_and_test():
     d_model = 9
     n_classes = 10
     img_size = (32, 32)
@@ -241,6 +243,30 @@ def main():
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
         print(f"Model Accuracy: {100 * (correct / total) : .2f}%")
+
+
+def export_model_to_onnx():
+    transformer = VisionTransformer(9, 10, (32, 32), (16, 16), 1, 3, 3)
+
+    torch.onnx.export(
+        transformer,
+        (torch.randn(128, 1, 32, 32),),
+        "mnist-vit.onnx",
+        input_names=["input"],
+        output_names=["output"],
+        dynamo=True,
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", choices=["train-test", "export"])
+    args = parser.parse_args()
+
+    if args.action == "train-test":
+        train_and_test()
+    else:
+        export_model_to_onnx()
 
 
 if __name__ == "__main__":
